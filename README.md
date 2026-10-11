@@ -270,7 +270,9 @@ If you forget the English version (or make a typo), the build **stops** and the 
    - `caption`: short title shown on the photo.
    - `alt`: what the photo shows (for Google and visually impaired visitors).
    - `tall: true` for portrait photos (takes two rows). For a tidy grid of 8 photos, keep **4 tall + 4 normal** in this order: tall, normal, tall, normal, tall, tall, normal, normal.
-4. The first 6 photos also appear in the Instagram section.
+4. The **first photo** is also the large photo at the top of the home page, and the **second** is shown next to the introduction. To change them, move a block to the top of the `gallery` list.
+5. The first 6 photos also appear in the Instagram section.
+6. Visitors can click or tap any gallery photo to see it full screen. The viewer has a **Fermer / Close ✕** button at the top right, arrows (or swipe on a phone, or the ← → keys) to move between photos, and closes with Escape or a click on the dark background. Without JavaScript, the photo simply opens on its own page.
 
 **Taking photos from your Instagram:** use the original photos from your phone's gallery rather than screenshots (better quality, no Instagram buttons). For posts you no longer have locally: Instagram → Profile → ☰ → **Your activity** → **Download your information** sends you your original photos.
 

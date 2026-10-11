@@ -35,6 +35,9 @@ export const uiIcons = {
   mail: ui(`<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3.5 6l8.5 7 8.5-7"/>`),
   // Generic camera icon (not the Instagram trademark glyph; see README to use the official one)
   camera: ui(`<path d="M3 8.5A1.5 1.5 0 0 1 4.5 7H8l1.6-2.5h4.8L16 7h3.5A1.5 1.5 0 0 1 21 8.5v10a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/><circle cx="12" cy="13" r="3.6"/>`),
+  zoom: ui(`<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/>`),
+  chevronLeft: ui(`<path d="M15 5l-7 7 7 7"/>`),
+  chevronRight: ui(`<path d="M9 5l7 7-7 7"/>`),
   menu: ui(`<path d="M4 7h16M4 12h16M4 17h16"/>`),
   close: ui(`<path d="M6 6l12 12M18 6L6 18"/>`),
   pin: ui(`<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>`),

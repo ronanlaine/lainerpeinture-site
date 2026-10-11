@@ -1,6 +1,7 @@
 /* =====================================================================
    LAINER PEINTURE — interactions (vanilla JS, no dependencies)
    1. Mobile menu   2. Language memory   3. Header state   4. Enquiry form
+   5. Photo viewer (click a project photo to see it full screen)
    Form texts come from the page itself (#form-i18n), so they are always
    in the page's language. Edit them in content/translations.mjs.
    ===================================================================== */
@@ -181,4 +182,73 @@
         });
     });
   });
+
+  /* 5. Photo viewer -------------------------------------------------------
+     Without JavaScript, each photo is a normal link to the full image.   */
+  var dialog = document.querySelector("[data-lightbox-dialog]");
+  var links = Array.prototype.slice.call(document.querySelectorAll("[data-lightbox]"));
+  if (dialog && links.length && typeof dialog.showModal === "function") {
+    var img = dialog.querySelector("[data-lb-img]");
+    var cap = dialog.querySelector("[data-lb-caption]");
+    var count = dialog.querySelector("[data-lb-count]");
+    var frame = dialog.querySelector("[data-lb-frame]");
+    var current = 0;
+    img.dataset.blank = img.getAttribute("src"); // empty placeholder while closed
+    var opener = null;
+
+    var show = function (i) {
+      current = (i + links.length) % links.length;
+      var a = links[current];
+      img.src = a.getAttribute("href");
+      img.alt = a.dataset.alt || "";
+      cap.textContent = a.dataset.caption || "";
+      count.textContent = dialog.dataset.count.replace("{n}", current + 1).replace("{total}", links.length);
+      // Preload the neighbours so "next" feels instant
+      [current + 1, current - 1].forEach(function (k) {
+        var n = links[(k + links.length) % links.length];
+        if (n) { var pre = new Image(); pre.src = n.getAttribute("href"); }
+      });
+    };
+    var open = function (i) {
+      opener = document.activeElement;
+      show(i);
+      dialog.showModal();
+      document.documentElement.classList.add("lb-open");
+      dialog.querySelector("[data-lb-close]").focus();
+    };
+    var close = function () { dialog.close(); };
+
+    links.forEach(function (a, i) {
+      a.addEventListener("click", function (e) {
+        if (e.metaKey || e.ctrlKey || e.shiftKey) return; // let "open in new tab" work
+        e.preventDefault();
+        open(i);
+      });
+    });
+    dialog.addEventListener("close", function () {
+      document.documentElement.classList.remove("lb-open");
+      img.src = img.dataset.blank || img.src;
+      if (opener && opener.focus) opener.focus();
+    });
+    dialog.querySelector("[data-lb-close]").addEventListener("click", close);
+    dialog.querySelector("[data-lb-prev]").addEventListener("click", function () { show(current - 1); });
+    dialog.querySelector("[data-lb-next]").addEventListener("click", function () { show(current + 1); });
+    // Click on the dark background (not on the photo or buttons) closes
+    frame.addEventListener("click", function (e) {
+      if (e.target === frame || e.target.classList.contains("lb-figure")) close();
+    });
+    dialog.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight") { e.preventDefault(); show(current + 1); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); show(current - 1); }
+    });
+    // Swipe left / right on phones and tablets
+    var startX = null;
+    frame.addEventListener("touchstart", function (e) { startX = e.touches[0].clientX; }, { passive: true });
+    frame.addEventListener("touchend", function (e) {
+      if (startX === null) return;
+      var dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) > 50) show(current + (dx < 0 ? 1 : -1));
+      startX = null;
+    });
+  }
 })();

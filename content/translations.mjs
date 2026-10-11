@@ -103,6 +103,7 @@ export const translations = {
         title: "Vos murs, vos sols, vos finitions : un seul interlocuteur",
         p1: "Lainer Peinture réalise vos travaux de peinture intérieure et extérieure, de préparation et de rénovation des murs, de revêtements muraux et de pose de sols.",
         p2: "Du rebouchage d’une fissure à la rénovation complète d’une pièce, chaque chantier commence par le même principe : un support bien préparé, pour une finition qui dure.",
+        seeWork: "Voir nos réalisations",
       },
       services: {
         title: "Nos prestations",
@@ -120,7 +121,7 @@ export const translations = {
       },
       work: {
         title: "Réalisations",
-        lead: "Une sélection de chantiers. Les plus récents sont publiés sur Instagram.",
+        lead: "Une sélection de chantiers. Touchez une photo pour l’agrandir. Les plus récents sont publiés sur Instagram.",
         placeholder: "Photo de chantier à venir",
       },
       process: {
@@ -287,6 +288,15 @@ export const translations = {
       cookiesText: "Ce site n’utilise ni cookies, ni outil de mesure d’audience, ni publicité. Votre choix de langue est simplement enregistré dans votre navigateur (stockage local) pour vous afficher la bonne version lors de votre prochaine visite. Les polices de caractères sont hébergées sur le site lui-même.",
     },
 
+    lightbox: {
+      title: "Photo agrandie",
+      open: "Agrandir la photo : {caption}",
+      close: "Fermer",
+      prev: "Photo précédente",
+      next: "Photo suivante",
+      count: "Photo {n} sur {total}",
+    },
+
     notFound: {
       title: "Page introuvable",
       text: "Cette page n’existe pas ou a été déplacée.",
@@ -362,6 +372,7 @@ export const translations = {
         title: "Your walls, your floors, your finishes: one point of contact",
         p1: "Lainer Peinture carries out interior and exterior painting, wall preparation and renovation, wall coverings and flooring installation.",
         p2: "From filling a single crack to renovating a whole room, every project starts from the same principle: a well-prepared surface, for a finish that lasts.",
+        seeWork: "See our work",
       },
       services: {
         title: "Our services",
@@ -379,7 +390,7 @@ export const translations = {
       },
       work: {
         title: "Our work",
-        lead: "A selection of projects. The most recent ones are posted on Instagram.",
+        lead: "A selection of projects. Tap a photo to enlarge it. The most recent ones are posted on Instagram.",
         placeholder: "Project photo coming soon",
       },
       process: {
@@ -544,6 +555,15 @@ export const translations = {
       privacyP3: "Under the GDPR, you can ask to access, correct or delete your data by writing to {email}. You can also lodge a complaint with the CNIL, the French data protection authority (www.cnil.fr).",
       cookiesTitle: "Cookies",
       cookiesText: "This website uses no cookies, no analytics and no advertising. Your language choice is simply saved in your browser (local storage) so the right version is shown on your next visit. Fonts are hosted on the website itself.",
+    },
+
+    lightbox: {
+      title: "Enlarged photo",
+      open: "Enlarge photo: {caption}",
+      close: "Close",
+      prev: "Previous photo",
+      next: "Next photo",
+      count: "Photo {n} of {total}",
     },
 
     notFound: {

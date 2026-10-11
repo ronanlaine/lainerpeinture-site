@@ -45,6 +45,45 @@ export function makeCtx({ cfg, translations, lang, page }) {
   return { cfg, t, lang, other, page, prefix, e, url, abs, asset, fill, translations, phone };
 }
 
+
+// Reads the pixel size of a WebP/JPEG/PNG file (no dependencies).
+function imageSize(file) {
+  try {
+    const b = readFileSync(file);
+    if (b.toString("ascii", 0, 4) === "RIFF" && b.toString("ascii", 8, 12) === "WEBP") {
+      const chunk = b.toString("ascii", 12, 16);
+      if (chunk === "VP8X") return { w: 1 + b.readUIntLE(24, 3), h: 1 + b.readUIntLE(27, 3) };
+      if (chunk === "VP8 ") return { w: b.readUInt16LE(26) & 0x3fff, h: b.readUInt16LE(28) & 0x3fff };
+      if (chunk === "VP8L") { const v = b.readUInt32LE(21); return { w: (v & 0x3fff) + 1, h: ((v >> 14) & 0x3fff) + 1 }; }
+    }
+    if (b[0] === 0x89 && b.toString("ascii", 1, 4) === "PNG") return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+    if (b[0] === 0xff && b[1] === 0xd8) {
+      let i = 2;
+      while (i < b.length) {
+        const m = b[i + 1], len = b.readUInt16BE(i + 2);
+        if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return { w: b.readUInt16BE(i + 7), h: b.readUInt16BE(i + 5) };
+        i += 2 + len;
+      }
+    }
+  } catch {}
+  return { w: 1200, h: 1500 };
+}
+
+// Builds src / srcset / sizes / width / height for a project photo.
+function photo(c, file, sizes) {
+  const path = (f) => new URL(`projects/${f}`, IMG_DIR);
+  const small = file.replace(/\.(\w+)$/, "-700.$1");
+  const big = imageSize(path(file));
+  const hasSmall = existsSync(path(small));
+  const srcset = hasSmall
+    ? `${c.asset(`img/projects/${small}`)} ${imageSize(path(small)).w}w, ${c.asset(`img/projects/${file}`)} ${big.w}w`
+    : "";
+  return {
+    full: c.asset(`img/projects/${file}`),
+    attrs: `src="${c.asset(`img/projects/${hasSmall ? small : file}`)}"${srcset ? ` srcset="${srcset}" sizes="${sizes}"` : ""} width="${big.w}" height="${big.h}"`,
+  };
+}
+
 const telHref = (cfg) => `tel:${cfg.phone.href}`;
 const mailHref = (cfg) => `mailto:${cfg.email}`;
 const isPlaceholderKey = (k) => !k || /^VOTRE_/i.test(k);
@@ -206,32 +245,6 @@ ${main}
 
 // ---------- shared blocks ----------------------------------------------
 
-// The brand's hand-painted strokes, redrawn as SVG. Animated once on load.
-function paintStroke() {
-  const P = "M28 250 C 130 165, 235 300, 352 200 S 515 105, 596 86";
-  const layers = [
-    ["#2F4256", 92, 0, 0, 1],
-    ["#3E5A78", 60, -8, -10, 0.95],
-    ["#6F8FA9", 26, -16, -22, 0.85],
-    ["#C9853D", 20, 12, 14, 0.95],
-    ["#A9BFCD", 9, -22, -30, 0.8],
-    ["#F3EEE2", 3, -18, -26, 0.75],
-    ["#1F2E3E", 2, 6, 22, 0.6],
-    ["#1F2E3E", 1.5, -4, 30, 0.5],
-    ["#F3EEE2", 1.5, 2, -6, 0.5],
-  ];
-  const paths = layers
-    .map(
-      ([col, w, dx, dy, o], i) =>
-        `<path d="${P}" pathLength="1" stroke="${col}" stroke-width="${w}" opacity="${o}" transform="translate(${dx} ${dy})" style="--i:${i}"${i === 3 ? ' class="ochre"' : ""}/>`
-    )
-    .join("");
-  return `<svg class="stroke-art" viewBox="0 0 620 340" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
-    <defs><filter id="bristle" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.08" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="9"/></filter></defs>
-    <g fill="none" stroke-linecap="round" filter="url(#bristle)">${paths}</g>
-  </svg>`;
-}
-
 function serviceSelectOptions(c) {
   const fr = c.translations.fr.services;
   return serviceOrder
@@ -326,16 +339,20 @@ function galleryTiles(c, { limit, decorative = false } = {}) {
   return items
     .map((g, i) => {
       if (g.file) {
-        const alt = decorative ? "" : c.e(g.alt[c.lang] || "");
-        const small = g.file.replace(/\.(\w+)$/, "-700.$1");
-        const hasSmall = existsSync(new URL(`projects/${small}`, IMG_DIR));
-        const srcset = hasSmall
-          ? ` srcset="${c.asset(`img/projects/${small}`)} 700w, ${c.asset(`img/projects/${g.file}`)} 1400w" sizes="${decorative ? "(min-width: 900px) 20vw, 33vw" : "(min-width: 900px) 25vw, 50vw"}"`
-          : "";
-        const cap = !decorative && g.caption?.[c.lang] ? `<figcaption>${c.e(g.caption[c.lang])}</figcaption>` : "";
-        return `<figure class="tile${g.tall && !decorative ? " tile--tall" : ""}"><img src="${c.asset(`img/projects/${hasSmall ? small : g.file}`)}"${srcset} alt="${alt}" loading="lazy" decoding="async" width="700" height="900">${cap}</figure>`;
+        const p = photo(c, g.file, decorative ? "(min-width: 900px) 18vw, 33vw" : "(min-width: 900px) 25vw, 50vw");
+        if (decorative) return `<figure class="tile"><img ${p.attrs} alt="" loading="lazy" decoding="async"></figure>`;
+        const alt = c.e(g.alt[c.lang] || "");
+        const caption = g.caption?.[c.lang] ? c.e(g.caption[c.lang]) : "";
+        const label = c.e(c.t.lightbox.open.replace("{caption}", g.caption?.[c.lang] || g.alt[c.lang] || ""));
+        return `<figure class="tile${g.tall ? " tile--tall" : ""}">
+          <a class="tile-link" href="${p.full}" data-lightbox data-caption="${caption}" data-alt="${alt}" aria-label="${label}">
+            <img ${p.attrs} alt="${alt}" loading="lazy" decoding="async">
+            <span class="tile-zoom" aria-hidden="true">${uiIcons.zoom}</span>
+          </a>
+          ${caption ? `<figcaption>${caption}</figcaption>` : ""}
+        </figure>`;
       }
-      return `<figure class="tile tile--placeholder"${decorative ? ' aria-hidden="true"' : ""}>
+      return `<figure class="tile tile--placeholder${g.tall && !decorative ? " tile--tall" : ""}"${decorative ? ' aria-hidden="true"' : ""}>
           <span class="tile-mark">${serviceIcons[serviceOrder[i % serviceOrder.length]]}</span>
           ${decorative ? "" : `<figcaption>${c.e(c.t.home.work.placeholder)}</figcaption>`}
         </figure>`;
@@ -343,10 +360,37 @@ function galleryTiles(c, { limit, decorative = false } = {}) {
     .join("\n        ");
 }
 
+// Full-screen photo viewer (opened by main.js). One per page with a gallery.
+function lightbox(c) {
+  const L = c.t.lightbox;
+  return `<dialog class="lightbox" aria-label="${c.e(L.title)}" data-lightbox-dialog
+    data-count="${c.e(L.count)}">
+    <div class="lb-frame" data-lb-frame>
+      <div class="lb-bar">
+        <p class="lb-count" data-lb-count aria-live="polite"></p>
+        <button class="lb-close" type="button" data-lb-close>${uiIcons.close}<span>${c.e(L.close)}</span></button>
+      </div>
+      <figure class="lb-figure">
+        <img data-lb-img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="">
+        <figcaption class="lb-caption" data-lb-caption></figcaption>
+      </figure>
+      <button class="lb-nav lb-prev" type="button" data-lb-prev aria-label="${c.e(L.prev)}">${uiIcons.chevronLeft}</button>
+      <button class="lb-nav lb-next" type="button" data-lb-next aria-label="${c.e(L.next)}">${uiIcons.chevronRight}</button>
+    </div>
+  </dialog>`;
+}
+
+// "Appeler le 06 59 09 15 88": on very small phones only the number is shown
+function callLabel(c) {
+  const [before, after = ""] = c.t.cta.call.split("{phone}");
+  const nb = (s) => c.e(s).replace(/ /g, "&nbsp;");
+  return `${before.trim() ? `<span class="call-prefix">${nb(before)}</span>` : ""}${c.phone}${nb(after)}`;
+}
+
 function ctaButtons(c, { light = false } = {}) {
   return `<div class="actions">
           <a class="btn btn-primary" href="${c.url("contact", c.lang, "#formulaire")}">${c.e(c.t.cta.quote)}</a>
-          <a class="btn ${light ? "btn-ghost-light" : "btn-ghost"}" href="${telHref(c.cfg)}">${uiIcons.phone}<span>${c.e(c.t.cta.call).replace(/ /g, "&nbsp;")}</span></a>
+          <a class="btn ${light ? "btn-ghost-light" : "btn-ghost"}" href="${telHref(c.cfg)}">${uiIcons.phone}<span>${callLabel(c)}</span></a>
         </div>`;
 }
 
@@ -383,6 +427,13 @@ export function homePage(c) {
     ? `<p class="hero-area">${uiIcons.pin}<span>${c.e(cfg.serviceArea[c.lang])}</span></p>`
     : "";
 
+  // Hero photo = first gallery photo, intro photo = second (change the order in site.config.mjs)
+  const photos = cfg.gallery.filter((g) => g.file);
+  const heroItem = photos[0];
+  const heroImg = heroItem ? photo(c, heroItem.file, "(min-width: 960px) 45vw, 100vw") : null;
+  const introItem = photos[1];
+  const introImg = introItem ? photo(c, introItem.file, "(min-width: 900px) 40vw, 100vw") : null;
+
   const groups = serviceGroups
     .map(
       (g) => `<article class="svc-group">
@@ -409,26 +460,30 @@ export function homePage(c) {
 
   const main = `
     <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-art">${paintStroke()}</div>
-      <div class="wrap hero-inner">
+      <div class="hero-grid">
         <div class="hero-panel">
-          <div class="frame">
+          <div class="hero-content">
             <h1 id="hero-title" class="hero-title">${c.e(h.hero.title)}</h1>
+            <p class="hero-lead">${c.e(h.hero.lead)}</p>
+            ${ctaButtons(c, { light: true })}
+            ${area}
           </div>
-          <p class="hero-lead">${c.e(h.hero.lead)}</p>
-          ${area}
-          ${ctaButtons(c, { light: true })}
         </div>
+        ${heroImg ? `<div class="hero-media"><img ${heroImg.attrs} alt="${c.e(heroItem.alt[c.lang])}" fetchpriority="high" decoding="async"></div>` : ""}
       </div>
     </section>
 
     <section class="section intro" aria-labelledby="intro-title">
       <div class="wrap intro-grid">
-        <h2 id="intro-title" class="h2">${c.e(h.intro.title)}</h2>
-        <div class="prose">
-          <p>${c.e(h.intro.p1)}</p>
-          <p>${c.e(h.intro.p2)}</p>
+        <div class="intro-text">
+          <h2 id="intro-title" class="h2">${c.e(h.intro.title)}</h2>
+          <div class="prose">
+            <p>${c.e(h.intro.p1)}</p>
+            <p>${c.e(h.intro.p2)}</p>
+          </div>
+          <p class="intro-links"><a class="text-link" href="#realisations">${c.e(h.intro.seeWork)}</a> <a class="text-link" href="${c.url("services")}">${c.e(c.t.cta.allServices)}</a></p>
         </div>
+        ${introImg ? `<figure class="intro-media"><img ${introImg.attrs} alt="${c.e(introItem.alt[c.lang])}" loading="lazy" decoding="async"><figcaption>${c.e(introItem.caption?.[c.lang] || "")}</figcaption></figure>` : ""}
       </div>
     </section>
 
@@ -509,7 +564,7 @@ export function homePage(c) {
       </div>
     </section>`;
 
-  return layout(c, { main, jsonLd: jsonLd(c), i18nScript: formI18n(c) });
+  return layout(c, { main: main + lightbox(c), jsonLd: jsonLd(c), i18nScript: formI18n(c) });
 }
 
 export function servicesPage(c) {
