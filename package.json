@@ -1,0 +1,12 @@
+{
+  "name": "lainer-peinture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site web bilingue de Lainer Peinture (GitHub Pages)",
+  "type": "module",
+  "scripts": {
+    "build": "node src/build.mjs",
+    "serve": "node src/build.mjs && node src/serve.mjs"
+  },
+  "engines": { "node": ">=18" }
+}
